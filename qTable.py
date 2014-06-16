@@ -40,12 +40,18 @@ set_point_k = u[0]
 e_k = set_point_k - y_k
 de_k = (e_k - 0) / time_step
 for k in range(1000000):
-    rangelo = (k + 50000) / 50000
-    if k % 50000 == 0:
+    rangelo = (k + 100000) / 100000
+    alpha = 1 / float(2 ** (rangelo - 1))
+    if k % 100000 == 0:
         # noinspection PyCallingNonCallable
-        x_k = np.matrix([[random.gauss(0, 0.3)],
-                         [random.gauss(0, 0.3)]])
-        print rangelo
+        x_k = np.matrix([[random.gauss(0, 0.02)],
+                         [random.gauss(0, 0.02)]])
+        y_k = (C * x_k)[0, 0]
+        set_point_k = u[0]
+        e_k = set_point_k - y_k
+        de_k = 0
+        print(str(rangelo) + " " + str(alpha))
+
     temp = sample(range(rangelo + 1), 1)[0]
     if temp == 0:
         policy = sample([-1, 1], 1)[0]
@@ -63,6 +69,7 @@ for k in range(1000000):
 
     x_kk = A * x_k + B * policy
     y_kk = (C * x_kk)[0, 0]
+    dy_kk = (y_kk - y_k) / time_step
     set_point_kk = u[(k + 1) % 2000]
     e_kk = set_point_kk - y_kk
     de_kk = (e_kk - e_k) / time_step
@@ -73,15 +80,9 @@ for k in range(1000000):
     Qmax = max([Q[indexes_kk_0[0], indexes_kk_0[1], indexes_kk_0[2]],
                 Q[indexes_kk_1[0], indexes_kk_1[1], indexes_kk_1[2]]])
 
-    alpha = 1 / float(rangelo**2)
-
     r0 = -abs(e_kk)
-    if abs(de_kk) > 10:
-        r1 = -abs(de_kk)
-    else:
-        r1 = -abs(de_kk)
 
-    Q[indexes_k[0], indexes_k[1], indexes_k[2]] = (1 - alpha) * Qk + alpha * (r0 + 0.005*r1 + 0.8 * Qmax)
+    Q[indexes_k[0], indexes_k[1], indexes_k[2]] = (1 - alpha) * Qk + alpha * (r0 + 0.8 * Qmax)
 
     x_k = x_kk
     y_k = y_kk
@@ -89,6 +90,7 @@ for k in range(1000000):
     e_k = e_kk
     de_k = de_kk
 
+# Validation
 t = []
 # noinspection PyCallingNonCallable
 x = [np.matrix([[0],
@@ -98,10 +100,10 @@ set_point = [u[0]]
 e = [set_point[0] - y[0]]
 de = [(e[0] - 0) / time_step]
 cs = []
-# dde = [(de[0] - 0)]
+
 # u = []
 # for kaka in range(2000):
-#     u.append(math.sin(kaka * time_step * math.pi / 2))
+# u.append(math.sin(kaka * time_step * math.pi / 2))
 for k in range(6000):
     t.append(k * time_step)
 
@@ -124,15 +126,14 @@ del set_point[-1]
 del e[-1]
 del de[-1]
 
-# f, axarr = plt.subplots(2)
-# axarr[0].plot(t, set_point, t, y)
-# axarr[1].plot(t, de)
-#
-#
-# for axis in axarr:
-#     axis.grid()
+f, axarr = plt.subplots(2, sharex=True)
+axarr[0].plot(t, set_point, t, y)
+axarr[1].plot(t, de)
 
-plt.plot(t, set_point, t, y)
-plt.grid()
+for axis in axarr:
+    axis.grid()
+
+# plt.plot(t, set_point, t, y)
+# plt.grid()
 
 plt.show()

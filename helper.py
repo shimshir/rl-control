@@ -1,24 +1,26 @@
 import numpy
 
 
-def get_q_indexes(policy, e, de, e_bins):
+def get_q_indexes(policy, x, dx, x_bins):
     if policy > 0:
         policy_index = 1
     else:
         policy_index = 0
 
-    if e <= e_bins[0]:
-        e_index = 0
-    elif e >= e_bins[-1]:
-        e_index = len(e_bins) - 1
+    if x <= x_bins[0]:
+        x_index = 0
+    elif x >= x_bins[-1]:
+        x_index = len(x_bins) - 1
     else:
-        e_index = numpy.digitize([e], e_bins)[0] - 1
+        x_index = numpy.digitize([x], x_bins)[0] - 1
 
-    if de <= -1:
-        de_index = 0
-    elif abs(de) < 1:
-        de_index = 1
-    elif de >= 1:
-        de_index = 2
+    knee_point = 0.75
 
-    return [policy_index, e_index, de_index]
+    if dx <= -knee_point:
+        dx_index = 0
+    elif abs(dx) < knee_point:
+        dx_index = 1
+    elif dx >= knee_point:
+        dx_index = 2
+
+    return [policy_index, x_index, dx_index]
