@@ -1,14 +1,8 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from ANN import ANN
 from random import sample
 import helper
 import random
-import pybrain
-import pybrain.datasets
-import pybrain.supervised.trainers
-from pybrain.structure.moduleslice import ModuleSlice
-import math
 
 # noinspection PyCallingNonCallable
 A = np.matrix([[0.98991884, -0.07855921],
