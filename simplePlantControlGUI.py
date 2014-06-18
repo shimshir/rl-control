@@ -199,8 +199,8 @@ class GraphFrame(wx.Frame):
         # plot the data as a line series, and save the reference 
         # to the plotted line series
         #
-        self.plot_data_0 = self.axes.plot(0, 1, linewidth=1, )[0]
-        self.plot_data_1 = self.axes.plot(0, 1, linewidth=1, )[0]
+        self.plot_data_0 = self.axes.plot(0, 1, 'b-', linewidth=1, )[0]
+        self.plot_data_1 = self.axes.plot(0, 1, 'g-', linewidth=1, )[0]
 
     def draw_plot(self):
         """ Redraws the plot
@@ -252,7 +252,6 @@ class GraphFrame(wx.Frame):
 
     def on_cb_grid(self, event):
         self.draw_plot()
-
 
     def on_cb_xlab(self, event):
         self.draw_plot()
