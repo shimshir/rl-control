@@ -191,7 +191,7 @@ class GraphFrame(wx.Frame):
 
         self.axes = self.fig.add_subplot(111)
         # self.axes.set_axis_bgcolor('black')
-        self.axes.set_title('Very important random data', size=12)
+        self.axes.set_title('Very important plant control', size=12)
 
         pylab.setp(self.axes.get_xticklabels(), fontsize=8)
         pylab.setp(self.axes.get_yticklabels(), fontsize=8)
