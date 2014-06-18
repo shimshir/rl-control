@@ -22,6 +22,7 @@ import pprint
 import random
 import sys
 import wx
+import time
 
 # The recommended way to use wx with mpl is with the WXAgg
 # backend. 
@@ -37,30 +38,33 @@ import numpy as np
 import pylab
 
 
-class DataGen(object):
-    """ A silly class that generates pseudo-random data for
-        display in the plot.
-    """
+class FloatSlider(wx.Slider):
+    def GetValue(self):
+        return (float(wx.Slider.GetValue(self))) / self.GetMax()
 
-    def __init__(self, init=50):
-        self.data = self.init = init
 
-    def next(self):
-        self._recalc_data()
-        return self.data
+class SliderBox(wx.Panel):
+    def __init__(self, parent, ID, label, initval):
+        wx.Panel.__init__(self, parent, ID)
 
-    def _recalc_data(self):
-        delta = random.uniform(-0.5, 0.5)
-        r = random.random()
+        self.value = initval
 
-        if r > 0.9:
-            self.data += delta * 15
-        elif r > 0.8:
-            # attraction to the initial value
-            delta += (0.5 if self.init > self.data else -0.5)
-            self.data += delta
-        else:
-            self.data += delta
+        box = wx.StaticBox(self, -1, label)
+        sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
+
+        self.slider = FloatSlider(self, id=-1, minValue=-100, maxValue=100, value=initval,
+                                  style=wx.SL_LABELS | wx.SL_VERTICAL | wx.SL_INVERSE)
+
+        manual_box = wx.BoxSizer(wx.HORIZONTAL)
+        manual_box.Add(self.slider, flag=wx.ALIGN_CENTER_VERTICAL)
+
+        sizer.Add(manual_box, 0, wx.ALL, 10)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+
+    def get_slider_value(self):
+        return self.slider.GetValue()
 
 
 class BoundControlBox(wx.Panel):
@@ -120,17 +124,18 @@ class GraphFrame(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, None, -1, self.title)
 
-        self.datagen = DataGen()
-        self.data = [self.datagen.next()]
+        self.set_point_data = [0]
         self.paused = False
 
         self.create_menu()
         self.create_status_bar()
-        self.create_main_panel()
+        self._create_main_panel()
 
         self.redraw_timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.on_redraw_timer, self.redraw_timer)
-        self.redraw_timer.Start(100)
+        self.redraw_timer.Start(10)
+
+        self.is_open = True
 
     def create_menu(self):
         self.menubar = wx.MenuBar()
@@ -142,19 +147,23 @@ class GraphFrame(wx.Frame):
         m_exit = menu_file.Append(-1, "E&xit\tCtrl-X", "Exit")
         self.Bind(wx.EVT_MENU, self.on_exit, m_exit)
 
+        self.Bind(wx.EVT_CLOSE, self.on_exit)
+
         self.menubar.Append(menu_file, "&File")
         self.SetMenuBar(self.menubar)
 
-    def create_main_panel(self):
+    def _create_main_panel(self):
         self.panel = wx.Panel(self)
 
         self.init_plot()
         self.canvas = FigCanvas(self.panel, -1, self.fig)
 
         self.xmin_control = BoundControlBox(self.panel, -1, "X min", 0)
-        self.xmax_control = BoundControlBox(self.panel, -1, "X max", 50)
+        self.xmax_control = BoundControlBox(self.panel, -1, "X max", 200)
         self.ymin_control = BoundControlBox(self.panel, -1, "Y min", 0)
         self.ymax_control = BoundControlBox(self.panel, -1, "Y max", 100)
+
+        self.slider_control = SliderBox(self.panel, -1, "Slider", 0)
 
         self.pause_button = wx.Button(self.panel, -1, "Pause")
         self.Bind(wx.EVT_BUTTON, self.on_pause_button, self.pause_button)
@@ -185,6 +194,8 @@ class GraphFrame(wx.Frame):
         self.hbox2.AddSpacer(24)
         self.hbox2.Add(self.ymin_control, border=5, flag=wx.ALL)
         self.hbox2.Add(self.ymax_control, border=5, flag=wx.ALL)
+        self.hbox2.AddSpacer(24)
+        self.hbox2.Add(self.slider_control, border=5, flag=wx.ALL)
 
         self.vbox = wx.BoxSizer(wx.VERTICAL)
         self.vbox.Add(self.canvas, 1, flag=wx.LEFT | wx.TOP | wx.GROW)
@@ -202,7 +213,7 @@ class GraphFrame(wx.Frame):
         self.fig = Figure((3.0, 3.0), dpi=self.dpi)
 
         self.axes = self.fig.add_subplot(111)
-        self.axes.set_axis_bgcolor('black')
+        # self.axes.set_axis_bgcolor('black')
         self.axes.set_title('Very important random data', size=12)
 
         pylab.setp(self.axes.get_xticklabels(), fontsize=8)
@@ -211,69 +222,51 @@ class GraphFrame(wx.Frame):
         # plot the data as a line series, and save the reference 
         # to the plotted line series
         #
-        self.plot_data = self.axes.plot(
-            self.data,
-            linewidth=1,
-            color=(1, 1, 0),
-        )[0]
+        self.plot_data_0 = self.axes.plot(0, 1, linewidth=1, )[0]
+        self.plot_data_1 = self.axes.plot(0, 1, linewidth=1, )[0]
 
     def draw_plot(self):
         """ Redraws the plot
         """
-        # when xmin is on auto, it "follows" xmax to produce a 
-        # sliding window effect. therefore, xmin is assigned after
-        # xmax.
-        #
         if self.xmax_control.is_auto():
-            xmax = len(self.data) if len(self.data) > 50 else 50
+            xmax = len(self.set_point_data) if len(self.set_point_data) > 200 else 200
         else:
             xmax = int(self.xmax_control.manual_value())
 
         if self.xmin_control.is_auto():
-            xmin = xmax - 50
+            xmin = xmax - 200
         else:
             xmin = int(self.xmin_control.manual_value())
 
-        # for ymin and ymax, find the minimal and maximal values
-        # in the data set and add a mininal margin.
-        # 
-        # note that it's easy to change this scheme to the 
-        # minimal/maximal value in the current display, and not
-        # the whole data set.
-        # 
         if self.ymin_control.is_auto():
-            ymin = round(min(self.data), 0) - 1
+            ymin = round(min(self.set_point_data), 0) - 1
         else:
             ymin = int(self.ymin_control.manual_value())
 
         if self.ymax_control.is_auto():
-            ymax = round(max(self.data), 0) + 1
+            ymax = round(max(self.set_point_data), 0) + 1
         else:
             ymax = int(self.ymax_control.manual_value())
 
         self.axes.set_xbound(lower=xmin, upper=xmax)
         self.axes.set_ybound(lower=ymin, upper=ymax)
 
-        # anecdote: axes.grid assumes b=True if any other flag is
-        # given even if b is set to False.
-        # so just passing the flag into the first statement won't
-        # work.
-        #
         if self.cb_grid.IsChecked():
             self.axes.grid(True, color='gray')
         else:
             self.axes.grid(False)
 
-        # Using setp here is convenient, because get_xticklabels
-        # returns a list over which one needs to explicitly 
-        # iterate, and setp already handles this.
-        #
         pylab.setp(self.axes.get_xticklabels(),
                    visible=self.cb_xlab.IsChecked())
 
-        self.plot_data.set_xdata(np.arange(len(self.data)))
-        self.plot_data.set_ydata(np.array(self.data))
+        self.plot_data_0.set_xdata(np.arange(len(self.set_point_data)))
+        self.plot_data_0.set_ydata(self.set_point_data)
 
+        self.plot_data_1.set_xdata(np.arange(len(self.set_point_data)))
+        if len(self.set_point_data) >= 20:
+            self.plot_data_1.set_ydata(np.array(np.append(np.zeros(20), self.set_point_data[0:-20])))
+        else:
+            self.plot_data_1.set_ydata(np.array(self.set_point_data) * 0)
         self.canvas.draw()
 
     def on_pause_button(self, event):
@@ -309,13 +302,15 @@ class GraphFrame(wx.Frame):
         # if paused do not add data, but still redraw the plot
         # (to respond to scale modifications, grid change, etc.)
         #
+        if not self.is_open:
+            sys.exit(0)
         if not self.paused:
-            self.data.append(self.datagen.next())
-
-        self.draw_plot()
+            self.set_point_data.append(self.slider_control.get_slider_value())
+            self.draw_plot()
 
     def on_exit(self, event):
         self.Destroy()
+        self.is_open = False
 
     def flash_status_message(self, msg, flash_len_ms=1500):
         self.statusbar.SetStatusText(msg)
@@ -331,7 +326,7 @@ class GraphFrame(wx.Frame):
 
 
 if __name__ == '__main__':
-    app = wx.PySimpleApp()
+    app = wx.App()
     app.frame = GraphFrame()
     app.frame.Show()
     app.MainLoop()
