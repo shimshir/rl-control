@@ -3,7 +3,8 @@ from matplotlib import pyplot as plt
 from random import sample
 import helper
 import random
-
+import time
+import math
 # noinspection PyCallingNonCallable
 A = np.matrix([[0.98991884, -0.07855921],
                [0.00198993, 0.99992131]])
@@ -66,6 +67,7 @@ y_k = (C * x_k)[0, 0]
 set_point_k = u[0]
 e_k = set_point_k - y_k
 de_k = abs(random.gauss(0, 0.02))
+timeo = time.time()
 for k in range(1000000):
     rangelo = k / 10000
     alpha = 100000 / float(100000 + k)
@@ -77,7 +79,8 @@ for k in range(1000000):
         set_point_k = u[0]
         e_k = set_point_k - y_k
         de_k = 0
-        print(str(rangelo) + " " + str(alpha))
+        print(str(rangelo) + " " + str(alpha) + " " + str(time.time() - timeo))
+        timeo = time.time()
 
     temp = sample(range(rangelo + 1), 1)[0]
     if temp == 0:
@@ -111,12 +114,14 @@ for k in range(1000000):
 
     # if abs(e_kk) < 0.005 and abs(de_kk) < 0.05:
     #     r = 5
-    if abs(e_kk) < abs(e_k):
-        r = 1
+
+    abs_e_kk = math.fabs(e_kk)
+    if abs_e_kk < math.fabs(e_k):
+        r = 3
     else:
         r = 0
 
-    Q[indexes_k[0], indexes_k[1], indexes_k[2]] = (1 - alpha) * Qk + alpha * (r - abs(e_kk) + 0.8 * Qmax)
+    Q[indexes_k[0], indexes_k[1], indexes_k[2]] = (1 - alpha) * Qk + alpha * (r - abs_e_kk + 0.8 * Qmax)
 
     x_k = x_kk
     y_k = y_kk
@@ -164,14 +169,14 @@ del set_point[-1]
 del e[-1]
 del de[-1]
 
-f, axarr = plt.subplots(2, sharex=True)
-axarr[0].plot(t, set_point, t, y)
-axarr[1].plot(t, e)
+# f, axarr = plt.subplots(2, sharex=True)
+# axarr[0].plot(t, set_point, t, y)
+# axarr[1].plot(t, e)
+#
+# for axis in axarr:
+#     axis.grid()
 
-for axis in axarr:
-    axis.grid()
-
-# plt.plot(t, set_point, t, y)
-# plt.grid()
+plt.plot(t, set_point, t, y)
+plt.grid()
 
 plt.show()
