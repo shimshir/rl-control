@@ -1,39 +1,13 @@
-"""
-This demo demonstrates how to draw a dynamic mpl (matplotlib) 
-plot in a wxPython application.
-
-It allows "live" plotting as well as manual zooming to specific
-regions.
-
-Both X and Y axes allow "auto" or "manual" settings. For Y, auto
-mode sets the scaling of the graph to see all the data points.
-For X, auto mode makes the graph "follow" the data. Set it X min
-to manual 0 to always see the whole data from the beginning.
-
-Note: press Enter in the 'manual' text box to make a new value 
-affect the plot.
-
-Eli Bendersky (eliben@gmail.com)
-License: this code is in the public domain
-Last modified: 31.07.2008
-"""
 import os
-import pprint
-import random
 import sys
 import wx
-import time
+from plant import SimpleControlPlant
 
-# The recommended way to use wx with mpl is with the WXAgg
-# backend. 
-#
 import matplotlib
 
 matplotlib.use('WXAgg')
 from matplotlib.figure import Figure
-from matplotlib.backends.backend_wxagg import \
-    FigureCanvasWxAgg as FigCanvas, \
-    NavigationToolbar2WxAgg as NavigationToolbar
+from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigCanvas
 import numpy as np
 import pylab
 
@@ -53,7 +27,7 @@ class SliderBox(wx.Panel):
         sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
 
         self.slider = FloatSlider(self, id=-1, minValue=-100, maxValue=100, value=initval,
-                                  style=wx.SL_LABELS | wx.SL_VERTICAL | wx.SL_INVERSE)
+                                  style=wx.SL_VERTICAL | wx.SL_INVERSE)
 
         manual_box = wx.BoxSizer(wx.HORIZONTAL)
         manual_box.Add(self.slider, flag=wx.ALIGN_CENTER_VERTICAL)
@@ -123,8 +97,11 @@ class GraphFrame(wx.Frame):
 
     def __init__(self):
         wx.Frame.__init__(self, None, -1, self.title)
-
-        self.set_point_data = [0]
+        self.plant = SimpleControlPlant.get_sample_plant()
+        self.set_point_data = [0.0]
+        self.plant_output_data = [0.0]
+        self.e_prev = 0.0
+        self.e_curr = 0.0
         self.paused = False
 
         self.create_menu()
@@ -133,7 +110,7 @@ class GraphFrame(wx.Frame):
 
         self.redraw_timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.on_redraw_timer, self.redraw_timer)
-        self.redraw_timer.Start(10)
+        self.redraw_timer.Start(1)
 
         self.is_open = True
 
@@ -263,10 +240,7 @@ class GraphFrame(wx.Frame):
         self.plot_data_0.set_ydata(self.set_point_data)
 
         self.plot_data_1.set_xdata(np.arange(len(self.set_point_data)))
-        if len(self.set_point_data) >= 20:
-            self.plot_data_1.set_ydata(np.array(np.append(np.zeros(20), self.set_point_data[0:-20])))
-        else:
-            self.plot_data_1.set_ydata(np.array(self.set_point_data) * 0)
+        self.plot_data_1.set_ydata(self.plant_output_data)
         self.canvas.draw()
 
     def on_pause_button(self, event):
@@ -278,6 +252,7 @@ class GraphFrame(wx.Frame):
 
     def on_cb_grid(self, event):
         self.draw_plot()
+
 
     def on_cb_xlab(self, event):
         self.draw_plot()
@@ -305,7 +280,11 @@ class GraphFrame(wx.Frame):
         if not self.is_open:
             sys.exit(0)
         if not self.paused:
+            self.e_curr = self.set_point_data[-1] - self.plant_output_data[-1]
+            de = self.e_curr - self.e_prev
             self.set_point_data.append(self.slider_control.get_slider_value())
+            self.plant_output_data.append(self.plant.get_output(100 * self.e_curr + 3000 * de))
+            self.e_prev = self.e_curr
             self.draw_plot()
 
     def on_exit(self, event):
