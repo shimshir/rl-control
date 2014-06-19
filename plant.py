@@ -21,15 +21,18 @@ class SimpleControlPlant():
         self.y = self.C * self.x + self.D * u
         return self.y
 
+    def get_current_output(self):
+        return self.y
+
     @staticmethod
     def get_sample_plant():
         # noinspection PyCallingNonCallable
-        A = np.matrix([[0.98991884, -0.07855921],
-                       [0.00198993, 0.99992131]])
+        A = np.matrix([[0.84399437, -1.09288258],
+                       [0.02768304, 0.9831445]])
 
         # noinspection PyCallingNonCallable
-        B = np.matrix([[1.98992813e-03],
-                       [1.99328853e-06]])
+        B = np.matrix([[0.02768304],
+                       [0.00042695]])
 
         # noinspection PyCallingNonCallable
         C = np.matrix([[0., 39.4784176]])
