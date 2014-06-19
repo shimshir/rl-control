@@ -26,12 +26,7 @@ import numpy
 #     return [policy_index, x_index, dx_index]
 
 
-def get_q_indexes(policy, x, dx, x_bins, dx_bins):
-    if policy > 0:
-        policy_index = 1
-    else:
-        policy_index = 0
-
+def get_q_indexes(x, dx, x_bins, dx_bins):
     if x <= x_bins[0]:
         x_index = 0
     elif x >= x_bins[-1]:
@@ -46,4 +41,4 @@ def get_q_indexes(policy, x, dx, x_bins, dx_bins):
     else:
         dx_index = numpy.digitize([dx], dx_bins)[0] - 1
 
-    return [policy_index, x_index, dx_index]
+    return [x_index, dx_index]
