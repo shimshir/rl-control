@@ -12,7 +12,7 @@ class Agent:
         self.de_k = 0
         self.de_kk = 0
         self.alpha = 0
-        # treba ovo fino napraviti
+        # TODO: treba ovo fino napraviti
         self.e_bins = kwargs['e_bins']
         self.de_bins = kwargs['de_bins']
         self.plant = kwargs['plant']
