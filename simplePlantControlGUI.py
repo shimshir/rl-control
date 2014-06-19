@@ -1,7 +1,9 @@
 import os
 import sys
 import wx
-from plant import SimpleControlPlant
+import plant
+import rl
+import time
 
 import matplotlib
 
@@ -14,7 +16,7 @@ import pylab
 
 class FloatSlider(wx.Slider):
     def GetValue(self):
-        return (float(wx.Slider.GetValue(self))) / self.GetMax()
+        return (float(wx.Slider.GetValue(self))) / (2 * self.GetMax())
 
 
 class SliderBox(wx.Panel):
@@ -97,12 +99,12 @@ class GraphFrame(wx.Frame):
 
     def __init__(self):
         wx.Frame.__init__(self, None, -1, self.title)
-        self.plant = SimpleControlPlant.get_sample_plant()
         self.set_point_data = [0.0]
         self.plant_output_data = [0.0]
-        self.e_prev = 0.0
-        self.e_curr = 0.0
         self.paused = False
+
+        self.agent = rl.Agent(e_bins=np.linspace(-2, 2, 200), de_bins=np.linspace(-3, 3, 5),
+                              plant=plant.SimpleControlPlant.get_sample_plant(), time_step=0.03)
 
         self.create_menu()
         self.create_status_bar()
@@ -113,6 +115,7 @@ class GraphFrame(wx.Frame):
         self.redraw_timer.Start(1)
 
         self.is_open = True
+        self.timeo = time.time()
 
     def create_menu(self):
         self.menubar = wx.MenuBar()
@@ -136,9 +139,9 @@ class GraphFrame(wx.Frame):
         self.canvas = FigCanvas(self.panel, -1, self.fig)
 
         self.xmin_control = BoundControlBox(self.panel, -1, "X min", 0)
-        self.xmax_control = BoundControlBox(self.panel, -1, "X max", 200)
-        self.ymin_control = BoundControlBox(self.panel, -1, "Y min", 0)
-        self.ymax_control = BoundControlBox(self.panel, -1, "Y max", 100)
+        self.xmax_control = BoundControlBox(self.panel, -1, "X max", 10)
+        self.ymin_control = BoundControlBox(self.panel, -1, "Y min", -1)
+        self.ymax_control = BoundControlBox(self.panel, -1, "Y max", 1)
 
         self.slider_control = SliderBox(self.panel, -1, "Slider", 0)
 
@@ -206,24 +209,25 @@ class GraphFrame(wx.Frame):
         """ Redraws the plot
         """
         if self.xmax_control.is_auto():
-            xmax = len(self.set_point_data) if len(self.set_point_data) > 200 else 200
+            xmax = len(self.set_point_data) * self.agent.time_step if len(
+                self.set_point_data) > 20 / self.agent.time_step else 20
         else:
-            xmax = int(self.xmax_control.manual_value())
+            xmax = float(self.xmax_control.manual_value())
 
         if self.xmin_control.is_auto():
-            xmin = xmax - 200
+            xmin = xmax - 20
         else:
-            xmin = int(self.xmin_control.manual_value())
+            xmin = float(self.xmin_control.manual_value())
 
         if self.ymin_control.is_auto():
-            ymin = round(min(self.set_point_data), 0) - 1
+            ymin = float(min(self.set_point_data)) - 1
         else:
-            ymin = int(self.ymin_control.manual_value())
+            ymin = float(self.ymin_control.manual_value())
 
         if self.ymax_control.is_auto():
             ymax = round(max(self.set_point_data), 0) + 1
         else:
-            ymax = int(self.ymax_control.manual_value())
+            ymax = float(self.ymax_control.manual_value())
 
         self.axes.set_xbound(lower=xmin, upper=xmax)
         self.axes.set_ybound(lower=ymin, upper=ymax)
@@ -236,10 +240,10 @@ class GraphFrame(wx.Frame):
         pylab.setp(self.axes.get_xticklabels(),
                    visible=self.cb_xlab.IsChecked())
 
-        self.plot_data_0.set_xdata(np.arange(len(self.set_point_data)))
+        self.plot_data_0.set_xdata(np.arange(len(self.set_point_data)) * self.agent.time_step)
         self.plot_data_0.set_ydata(self.set_point_data)
 
-        self.plot_data_1.set_xdata(np.arange(len(self.set_point_data)))
+        self.plot_data_1.set_xdata(np.arange(len(self.set_point_data)) * self.agent.time_step)
         self.plot_data_1.set_ydata(self.plant_output_data)
         self.canvas.draw()
 
@@ -279,11 +283,17 @@ class GraphFrame(wx.Frame):
         if not self.is_open:
             sys.exit(0)
         if not self.paused:
-            self.e_curr = self.set_point_data[-1] - self.plant_output_data[-1]
-            de = self.e_curr - self.e_prev
             self.set_point_data.append(self.slider_control.get_slider_value())
-            self.plant_output_data.append(self.plant.get_output(100 * self.e_curr + 3000 * de))
-            self.e_prev = self.e_curr
+
+            self.agent.update_q_table(self.slider_control.get_slider_value())
+            self.plant_output_data.append(self.agent.plant.get_current_output())
+
+            time_to_sleep = 0.03 - (time.time() - self.timeo)
+
+            if time_to_sleep > 0:
+                time.sleep(time_to_sleep)
+
+            self.timeo = time.time()
             self.draw_plot()
 
     def on_exit(self, event):
