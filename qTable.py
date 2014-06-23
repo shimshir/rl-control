@@ -14,12 +14,12 @@ for k1 in range(30):
 for k2 in range(29):
     u.append(-0.5)
 
-agent = rl.Agent(e_bins=np.linspace(-2, 2, 100), de_bins=np.linspace(-3, 3, 100),
+agent = rl.Agent(actions=np.linspace(-1, 1, 5), e_bins=np.linspace(-1, 1, 100), de_bins=np.linspace(-2, 2, 10),
                  plant=plant.SimpleControlPlant.get_sample_plant(), time_step=0.03)
 
 agent.plant = plant.SimpleControlPlant.get_sample_plant()
 
-for keks in range(500000):
+for keks in range(1000000):
     agent.update_q_table(u[keks % 89])
 
 
