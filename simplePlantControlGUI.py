@@ -16,19 +16,20 @@ import pylab
 
 class FloatSlider(wx.Slider):
     def GetValue(self):
-        return (float(wx.Slider.GetValue(self))) / (2 * self.GetMax())
+        return (float(wx.Slider.GetValue(self))) / 100
 
 
 class SliderBox(wx.Panel):
-    def __init__(self, parent, ID, label, initval):
+    def __init__(self, parent, ID, label, min_max_init_val):
         wx.Panel.__init__(self, parent, ID)
 
-        self.value = initval
+        self.value = min_max_init_val[2]
 
         box = wx.StaticBox(self, -1, label)
         sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
 
-        self.slider = FloatSlider(self, id=-1, minValue=-100, maxValue=100, value=initval,
+        self.slider = FloatSlider(self, id=-1, minValue=min_max_init_val[0], maxValue=min_max_init_val[1],
+                                  value=min_max_init_val[2],
                                   style=wx.SL_VERTICAL | wx.SL_INVERSE)
 
         manual_box = wx.BoxSizer(wx.HORIZONTAL)
@@ -103,7 +104,8 @@ class GraphFrame(wx.Frame):
         self.plant_output_data = [0.0]
         self.paused = False
 
-        self.agent = rl.Agent(e_bins=np.linspace(-2, 2, 200), de_bins=np.linspace(-3, 3, 5),
+        self.agent = rl.Agent(actions=np.linspace(-1, 1, 10), manual_exploration=True,
+                              e_bins=np.linspace(-1.5, 1.5, 20), de_bins=np.linspace(-3, 3, 5),
                               plant=plant.SimpleControlPlant.get_sample_plant(), time_step=0.03)
 
         self.create_menu()
@@ -115,7 +117,7 @@ class GraphFrame(wx.Frame):
         self.redraw_timer.Start(1)
 
         self.is_open = True
-        self.timeo = time.time()
+        self.timo = time.time()
 
     def create_menu(self):
         self.menubar = wx.MenuBar()
@@ -143,7 +145,8 @@ class GraphFrame(wx.Frame):
         self.ymin_control = BoundControlBox(self.panel, -1, "Y min", -1)
         self.ymax_control = BoundControlBox(self.panel, -1, "Y max", 1)
 
-        self.slider_control = SliderBox(self.panel, -1, "Slider", 0)
+        self.slider_control = SliderBox(self.panel, -1, "Slider", [-50, 50, 0])
+        self.slider_chance_control = SliderBox(self.panel, -1, "Exploration rate", [0, 100, 100])
 
         self.pause_button = wx.Button(self.panel, -1, "Pause")
         self.Bind(wx.EVT_BUTTON, self.on_pause_button, self.pause_button)
@@ -176,6 +179,7 @@ class GraphFrame(wx.Frame):
         self.hbox2.Add(self.ymax_control, border=5, flag=wx.ALL)
         self.hbox2.AddSpacer(24)
         self.hbox2.Add(self.slider_control, border=5, flag=wx.ALL)
+        self.hbox2.Add(self.slider_chance_control, border=5, flag=wx.ALL)
 
         self.vbox = wx.BoxSizer(wx.VERTICAL)
         self.vbox.Add(self.canvas, 1, flag=wx.LEFT | wx.TOP | wx.GROW)
@@ -284,16 +288,16 @@ class GraphFrame(wx.Frame):
             sys.exit(0)
         if not self.paused:
             self.set_point_data.append(self.slider_control.get_slider_value())
-
-            self.agent.update_q_table(self.slider_control.get_slider_value())
+            self.agent.exploration_rate = self.slider_chance_control.get_slider_value()
+            self.agent.update_q_table(self.set_point_data[-1])
             self.plant_output_data.append(self.agent.plant.get_current_output())
 
-            time_to_sleep = 0.03 - (time.time() - self.timeo)
+            time_to_sleep = 0.03 - (time.time() - self.timo)
 
             if time_to_sleep > 0:
                 time.sleep(time_to_sleep)
 
-            self.timeo = time.time()
+            self.timo = time.time()
             self.draw_plot()
 
     def on_exit(self, event):
