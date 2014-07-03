@@ -1,29 +1,30 @@
 import random
+
 import numpy as np
 import gridWorld
 
 
 class TDLambda():
-    def __init__(self, dimensions=(3, 5)):
+    def __init__(self, dimensions=(4, 5)):
         self.gw = gridWorld.Grid()
+        self.dimensions = dimensions
         self.gw.init_sample_grid_world(dimensions)
         self.episodes_run = 0
         self.q = np.zeros(shape=(dimensions[0], dimensions[1], 4))
         self.e = np.zeros(shape=(dimensions[0], dimensions[1], 4))
-        self.actions = ["N", "E", "S", "W"]
         self.g = 0.8
         self.l = 0.7
-        self.terminal_states = [[(0, 1), -100], [(0, 2), -100], [(0, 3), -100], [(0, 4), 100], [(3, 2), -100]]
-        for ts in self.terminal_states:
+        for ts in self.gw.terminal_states:
             for action_number in range(4):
                 self.q[ts[0][0], ts[0][1], action_number] = ts[1]
 
-    def run_episode(self):
+    def learn(self):
         s_k = (0, 0)
+        # s_k = (random.sample(range(self.dimensions[0]), 1)[0], random.sample(range(self.dimensions[1]), 1)[0])
         while True:
             alpha = 50 / float(self.episodes_run + 50)
             policy = random.sample([0, 1, 2, 3], 1)[0]
-            a_k = self.actions[policy]
+            a_k = self.gw.actions[policy]
             s_kk = self.gw.get_next_state(s_k, a_k)
 
             r = self.gw.get_reward(s_k, a_k, s_kk)
@@ -40,21 +41,25 @@ class TDLambda():
                 break
         self.episodes_run += 1
 
+    def get_policy(self, state):
+        argmax_a = np.argmax(self.q[state[0], state[1], :])
+        return self.gw.actions[argmax_a]
+
     def is_terminal_state(self, state):
-        for ts in self.terminal_states:
+        for ts in self.gw.terminal_states:
             if state == ts[0]:
                 return True, ts[1]
         return False
 
+    @staticmethod
+    def is_online():
+        return True
+
 
 if __name__ == "__main__":
     td = TDLambda()
-    for k in range(500):
-        td.run_episode()
-
-    mc, nc, ac = td.q.shape
-    for xc in range(mc):
-        for yc in range(nc):
-            argmax_a = np.argmax(td.q[xc, yc, :])
-            ac = td.actions[argmax_a]
-            print(xc, yc, ac)
+    for i in range(500):
+        td.learn()
+    for row in range(4):
+        for col in range(5):
+            print(row, col, td.gw.actions[np.argmax(td.q[row, col, :])])
