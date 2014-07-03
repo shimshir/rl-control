@@ -2,19 +2,18 @@ import helper
 
 
 class Grid():
-    def __init__(self, grid_matrix=None, terminal_states=None, transition_model=None, reward_model=None, actions=None):
-        self.grid_matrix = grid_matrix
+    def __init__(self, terminal_states=None, transition_model=None, reward_model=None, actions=None):
         self.terminal_states = terminal_states
         self.transition_model = transition_model
         self.reward_model = reward_model
         self.actions = actions
         self.default_reward = -1
 
-    def init_sample_grid_world(self, dimensions=(3, 3)):
-        self.terminal_states = {(2, 2), (2, 0)}
+    def init_sample_grid_world(self, dimensions=None):
+        self.terminal_states = [[(0, 1), -100], [(0, 2), -100], [(0, 3), -100], [(0, 4), 100], [(3, 2), -100]]
         self.transition_model = ModelFunction([])
         self.reward_model = ModelFunction([])
-        self.actions = {"N", "E", "S", "W"}
+        self.actions = ["N", "E", "S", "W"]
         m, n = dimensions[0], dimensions[1]
         for row in range(m):
             for column in range(n):
@@ -118,6 +117,19 @@ class Grid():
                             self.reward_model.add_model(
                                 Model((row, column), action, (row - 1, column), self.default_reward))
 
+                    # adjust values for terminal states
+                    if self.is_terminal_state((row, column)):
+                        is_terminal, value = self.is_terminal_state((row, column))
+                        for model in self.reward_model.models:
+                            if model.s_k == (row, column):
+                                model.set_value(value)
+
+    def is_terminal_state(self, state):
+        for ts in self.terminal_states:
+            if state == ts[0]:
+                return True, ts[1]
+        return False
+
     def get_next_state(self, s_k, a_k):
         possible_transitions = [pt for pt in self.transition_model.models if pt.s_k == s_k and pt.a_k == a_k]
         chances = [transition.get_value() for transition in possible_transitions]
@@ -138,7 +150,7 @@ class ModelFunction():
         for model in self.models:
             if s_k == model.s_k and a_k == model.a_k and s_kk == model.s_kk:
                 return model.value
-        return 0
+        return 0.0
 
     def set_value(self, s_k, a_k, s_kk, value):
         for model in self.models:
@@ -170,6 +182,7 @@ class Model():
 
 
 # grid = Grid()
-# grid.init_sample_grid_world((3, 4))
-# for model in grid.transition_model.models:
+# grid.init_sample_grid_world((4, 5), terminal_states=[[(0, 1), -100], [(0, 2), -100], [(0, 3), -100], [(0, 4), 100],
+#                                                      [(3, 2), -100]])
+# for model in grid.reward_model.models:
 #     print model
