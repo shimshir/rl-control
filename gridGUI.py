@@ -1,6 +1,6 @@
 from Tkinter import Tk, Canvas, Frame, Button
 from Tkinter import BOTH, TOP, LEFT, RIGHT
-import numpy as np
+import dp
 import tdLambda
 
 
@@ -106,17 +106,17 @@ class GridGUI(Frame):
     def run_algorithm(self):
         if not self.algorithm_is_paused:
             canvas = self.canvas
-            self.algorithm.run_episode()
+            self.algorithm.learn()
             for row in range(self.max_row):
                 for col in range(self.max_col):
                     if self.algorithm.is_terminal_state((row, col)):
                         continue
-                    argmax_a = np.argmax(self.algorithm.q[row, col, :])
-                    argmax_action = self.algorithm.actions[argmax_a]
-                    for action in self.algorithm.actions:
+                    argmax_action = self.algorithm.get_policy((row, col))
+                    for action in self.algorithm.gw.actions:
                         canvas.itemconfig(self.polygons.get_polygon((row, col), action), fill="#CCFF99")
                     canvas.itemconfig(self.polygons.get_polygon((row, col), argmax_action), fill="#009900")
-            self.after(10, self.run_algorithm)
+            if self.algorithm.is_online():
+                self.after(10, self.run_algorithm)
 
     def pause_algorithm(self):
         self.algorithm_is_paused = True
@@ -126,7 +126,8 @@ def main():
     root = Tk()
     grid_dimensions = (4, 5)
     td_lambda_algorithm = tdLambda.TDLambda(dimensions=grid_dimensions)
-    app = GridGUI(root, dimensions=grid_dimensions, algorithm=td_lambda_algorithm)
+    dp_algorithm = dp.DP(dimensions=grid_dimensions)
+    app = GridGUI(root, dimensions=grid_dimensions, algorithm=dp_algorithm)
     app.mainloop()
 
 
