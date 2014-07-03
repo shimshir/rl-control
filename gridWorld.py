@@ -9,7 +9,7 @@ class Grid():
         self.actions = actions
         self.default_reward = -1
 
-    def init_sample_grid_world(self, dimensions=None):
+    def init_sample_grid_world(self, dimensions=(4, 5)):
         self.terminal_states = [[(0, 1), -100], [(0, 2), -100], [(0, 3), -100], [(0, 4), 100], [(3, 2), -100]]
         self.transition_model = ModelFunction([])
         self.reward_model = ModelFunction([])
@@ -137,6 +137,9 @@ class Grid():
         return possible_transitions[next_state_index].s_kk
 
     def get_reward(self, s_k, a_k, s_kk):
+        if self.is_terminal_state(s_k):
+            is_terminal, value = self.is_terminal_state(s_k)
+            return value
         reward_value = [reward.get_value() for reward in self.reward_model.models if
                         reward.s_k == s_k and reward.a_k == a_k and reward.s_kk == s_kk][0]
         return reward_value
@@ -181,8 +184,8 @@ class Model():
         return self.__str__()
 
 
-# grid = Grid()
-# grid.init_sample_grid_world((4, 5), terminal_states=[[(0, 1), -100], [(0, 2), -100], [(0, 3), -100], [(0, 4), 100],
-#                                                      [(3, 2), -100]])
-# for model in grid.reward_model.models:
-#     print model
+        # grid = Grid()
+        # grid.init_sample_grid_world((4, 5), terminal_states=[[(0, 1), -100], [(0, 2), -100], [(0, 3), -100], [(0, 4), 100],
+        # [(3, 2), -100]])
+        # for model in grid.reward_model.models:
+        # print model
