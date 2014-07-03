@@ -1,6 +1,7 @@
 from Tkinter import Tk, Canvas, Frame, Button
 from Tkinter import BOTH, TOP, LEFT, RIGHT
 import dp
+import monteCarlo
 import tdLambda
 
 
@@ -125,9 +126,10 @@ class GridGUI(Frame):
 def main():
     root = Tk()
     grid_dimensions = (4, 5)
-    td_lambda_algorithm = tdLambda.TDLambda(dimensions=grid_dimensions)
     dp_algorithm = dp.DP(dimensions=grid_dimensions)
-    app = GridGUI(root, dimensions=grid_dimensions, algorithm=dp_algorithm)
+    mc_algorithm = monteCarlo.MonteCarlo(dimensions=grid_dimensions)
+    td_lambda_algorithm = tdLambda.TDLambda(dimensions=grid_dimensions)
+    app = GridGUI(root, dimensions=grid_dimensions, algorithm=mc_algorithm)
     app.mainloop()
 
 
