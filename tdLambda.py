@@ -1,5 +1,4 @@
 import random
-
 import numpy as np
 import gridWorld
 
@@ -19,10 +18,12 @@ class TDLambda():
                 self.q[ts[0][0], ts[0][1], action_number] = ts[1]
 
     def learn(self):
-        s_k = (0, 0)
-        # s_k = (random.sample(range(self.dimensions[0]), 1)[0], random.sample(range(self.dimensions[1]), 1)[0])
+        # s_k = (0, 0)
+        s_k = (random.sample(range(self.dimensions[0]), 1)[0], random.sample(range(self.dimensions[1]), 1)[0])
+        if self.is_terminal_state(s_k):
+            return
         while True:
-            alpha = 50 / float(self.episodes_run + 50)
+            alpha = 100 / float(self.episodes_run + 100)
             policy = random.sample([0, 1, 2, 3], 1)[0]
             a_k = self.gw.actions[policy]
             s_kk = self.gw.get_next_state(s_k, a_k)
