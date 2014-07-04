@@ -7,10 +7,11 @@ class Grid():
         self.transition_model = transition_model
         self.reward_model = reward_model
         self.actions = actions
-        self.default_reward = -1
+        self.default_reward = -20
 
     def init_sample_grid_world(self, dimensions=(4, 5)):
-        self.terminal_states = [[(0, 1), -100], [(0, 2), -100], [(0, 3), -100], [(0, 4), 100], [(3, 2), -100]]
+        self.terminal_states = [[(0, 1), -100], [(0, 2), -100], [(0, 3), -100], [(0, 4), 100], [(3, 2), -100],
+                                [(2, 2), -100]]
         self.transition_model = ModelFunction([])
         self.reward_model = ModelFunction([])
         self.actions = ["N", "E", "S", "W"]
@@ -140,8 +141,13 @@ class Grid():
         if self.is_terminal_state(s_k):
             is_terminal, value = self.is_terminal_state(s_k)
             return value
-        reward_value = [reward.get_value() for reward in self.reward_model.models if
-                        reward.s_k == s_k and reward.a_k == a_k and reward.s_kk == s_kk][0]
+        try:
+            reward_value = [reward.get_value() for reward in self.reward_model.models if
+                            reward.s_k == s_k and reward.a_k == a_k and reward.s_kk == s_kk][0]
+        except IndexError:
+            print("Unknown transition: " + str([s_k, a_k, s_kk]))
+            return None
+
         return reward_value
 
 
@@ -184,8 +190,6 @@ class Model():
         return self.__str__()
 
 
-        # grid = Grid()
-        # grid.init_sample_grid_world((4, 5), terminal_states=[[(0, 1), -100], [(0, 2), -100], [(0, 3), -100], [(0, 4), 100],
-        # [(3, 2), -100]])
-        # for model in grid.reward_model.models:
-        # print model
+# grid = Grid()
+# grid.init_sample_grid_world((4, 5))
+# grid.get_reward((0, 0), "E", (123, 123))
