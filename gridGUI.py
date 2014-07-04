@@ -30,7 +30,7 @@ class GridGUI(Frame):
         self._init_ui()
 
     def _init_ui(self):
-        self.parent.title("Layout Test")
+        self.parent.title("GridWorld")
         self.config(bg='#F0F0F0')
         self.pack(fill=BOTH, expand=1)
         # create canvas
@@ -38,8 +38,8 @@ class GridGUI(Frame):
                              highlightthickness=0)
         for row in range(self.max_row):
             for col in range(self.max_col):
-                if self.algorithm.is_terminal_state((row, col)):
-                    is_terminal, value = self.algorithm.is_terminal_state((row, col))
+                if self.algorithm.gw.is_terminal_state((row, col)):
+                    is_terminal, value = self.algorithm.gw.is_terminal_state((row, col))
                     if value == -100:
                         self.canvas.create_rectangle(col * self.sq_size, row * self.sq_size, (col + 1) * self.sq_size,
                                                      (row + 1) * self.sq_size, outline='gray',
@@ -110,14 +110,14 @@ class GridGUI(Frame):
             self.algorithm.learn()
             for row in range(self.max_row):
                 for col in range(self.max_col):
-                    if self.algorithm.is_terminal_state((row, col)):
+                    if self.algorithm.gw.is_terminal_state((row, col)):
                         continue
                     argmax_action = self.algorithm.get_policy((row, col))
                     for action in self.algorithm.gw.actions:
                         canvas.itemconfig(self.polygons.get_polygon((row, col), action), fill="#CCFF99")
                     canvas.itemconfig(self.polygons.get_polygon((row, col), argmax_action), fill="#009900")
             if self.algorithm.is_online():
-                self.after(10, self.run_algorithm)
+                self.after(1, self.run_algorithm)
 
     def pause_algorithm(self):
         self.algorithm_is_paused = True
