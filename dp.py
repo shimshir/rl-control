@@ -27,20 +27,14 @@ class DP():
                                                                    (row_kk, col_kk))
                                 disc_v = self.g * self.v[row_kk, col_kk]
                                 temp_sums[action_number] += prob * (r + disc_v)
-                    if self.is_terminal_state((row_k, col_k)):
-                        is_terminal, value = self.is_terminal_state((row_k, col_k))
+                    if self.gw.is_terminal_state((row_k, col_k)):
+                        is_terminal, value = self.gw.is_terminal_state((row_k, col_k))
                         self.v[row_k, col_k] = value
                     else:
                         self.v[row_k, col_k] = max(temp_sums)
                     delta = max([delta, abs(v - self.v[row_k, col_k])])
             if delta < 0.0001:
                 break
-
-    def is_terminal_state(self, state):
-        for ts in self.gw.terminal_states:
-            if state == ts[0]:
-                return True, ts[1]
-        return False
 
     def get_policy(self, state):
         row_k = state[0]
