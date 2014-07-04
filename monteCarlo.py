@@ -1,4 +1,3 @@
-import random
 import numpy as np
 import gridWorld
 import helper
@@ -13,11 +12,10 @@ class MonteCarlo():
         self.returns = np.zeros(shape=(dimensions[0], dimensions[1], 4, 2))
         self.policy = np.zeros(shape=(dimensions[0], dimensions[1], 4))
         self.policy[:, :, :] = 0.25
+        self.eps = 0.4
 
     def learn(self):
-        s_k = (random.sample(range(self.dimensions[0]), 1)[0], random.sample(range(self.dimensions[1]), 1)[0])
-        if self.is_terminal_state(s_k):
-            return
+        s_k = (0, 0)
         # (a)
         occurrences = []
         while True:
@@ -25,11 +23,9 @@ class MonteCarlo():
             a_k = self.gw.actions[policy]
             s_kk = self.gw.get_next_state(s_k, a_k)
             occurrences.append([s_k, policy, self.gw.get_reward(s_k, a_k, s_kk)])
-            a_k = self.gw.actions[policy]
-            s_k = self.gw.get_next_state(s_k, a_k)
-            if self.is_terminal_state(s_k):
-                occurrences.append([s_k, policy, self.gw.get_reward(s_k, a_k, s_kk)])
+            if self.gw.is_terminal_state(s_k):
                 break
+            s_k = s_kk
 
         # (b)
         computed_state_actions = []
@@ -54,9 +50,9 @@ class MonteCarlo():
             opt_action = np.argmax(self.q[state[0], state[1], :])
             for action_number in range(4):
                 if action_number == opt_action:
-                    self.policy[state[0], state[1], action_number] = 0.7
+                    self.policy[state[0], state[1], action_number] = 1 - self.eps + self.eps/4
                 else:
-                    self.policy[state[0], state[1], action_number] = 0.1
+                    self.policy[state[0], state[1], action_number] = self.eps/4
             computed_states.append(state)
 
     def get_policy(self, state):
@@ -68,12 +64,6 @@ class MonteCarlo():
         for action_number in range(4):
             weights.append(self.policy[state[0], state[1], action_number])
         return helper.weighted_choice(weights)
-
-    def is_terminal_state(self, state):
-        for ts in self.gw.terminal_states:
-            if state == ts[0]:
-                return True, ts[1]
-        return False
 
     @staticmethod
     def is_online():
