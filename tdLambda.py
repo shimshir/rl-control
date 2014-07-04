@@ -13,15 +13,9 @@ class TDLambda():
         self.e = np.zeros(shape=(dimensions[0], dimensions[1], 4))
         self.g = 0.8
         self.l = 0.7
-        for ts in self.gw.terminal_states:
-            for action_number in range(4):
-                self.q[ts[0][0], ts[0][1], action_number] = ts[1]
 
     def learn(self):
-        # s_k = (0, 0)
-        s_k = (random.sample(range(self.dimensions[0]), 1)[0], random.sample(range(self.dimensions[1]), 1)[0])
-        if self.is_terminal_state(s_k):
-            return
+        s_k = (0, 0)
         while True:
             alpha = 100 / float(self.episodes_run + 100)
             policy = random.sample([0, 1, 2, 3], 1)[0]
@@ -37,20 +31,14 @@ class TDLambda():
                     for action_number in range(a):
                         self.q[x, y, action_number] += alpha * delta * self.e[x, y, action_number]
                         self.e[x, y, action_number] *= self.g * self.l
-            s_k = s_kk
-            if self.is_terminal_state(s_k):
+            if self.gw.is_terminal_state(s_k):
                 break
+            s_k = s_kk
         self.episodes_run += 1
 
     def get_policy(self, state):
         argmax_a = np.argmax(self.q[state[0], state[1], :])
         return self.gw.actions[argmax_a]
-
-    def is_terminal_state(self, state):
-        for ts in self.gw.terminal_states:
-            if state == ts[0]:
-                return True, ts[1]
-        return False
 
     @staticmethod
     def is_online():
