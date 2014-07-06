@@ -100,13 +100,23 @@ class GraphFrame(wx.Frame):
 
     def __init__(self):
         wx.Frame.__init__(self, None, -1, self.title)
+        self.u = []
+        for k0 in range(33):
+            self.u.append(0.5)
+
+        for k1 in range(33):
+            self.u.append(0)
+
+        for k2 in range(34):
+            self.u.append(-0.5)
+
         self.set_point_data = [0.0]
         self.plant_output_data = [0.0]
         self.paused = False
 
-        self.agent = rl.Agent(actions=np.linspace(-1, 1, 10), manual_exploration=True,
+        self.agent = rl.Agent(actions=np.linspace(-1, 1, 5), manual_exploration=False,
                               e_bins=np.linspace(-1.5, 1.5, 20), de_bins=np.linspace(-3, 3, 5),
-                              plant=plant.SimpleControlPlant.get_sample_plant(), time_step=0.03)
+                              plant=plant.SimpleControlPlant.get_sample_plant(0.03), time_step=0.03)
 
         self.create_menu()
         self.create_status_bar()
@@ -118,6 +128,7 @@ class GraphFrame(wx.Frame):
 
         self.is_open = True
         self.timo = time.time()
+        self.iter = 0
 
     def create_menu(self):
         self.menubar = wx.MenuBar()
@@ -198,7 +209,9 @@ class GraphFrame(wx.Frame):
 
         self.axes = self.fig.add_subplot(111)
         # self.axes.set_axis_bgcolor('black')
-        self.axes.set_title('Very important plant control', size=12)
+        self.axes.set_title('Real time control', size=12)
+        self.axes.set_xlabel('t(s)')
+        self.axes.set_ylabel('Odziv')
 
         pylab.setp(self.axes.get_xticklabels(), fontsize=8)
         pylab.setp(self.axes.get_yticklabels(), fontsize=8)
@@ -287,8 +300,9 @@ class GraphFrame(wx.Frame):
         if not self.is_open:
             sys.exit(0)
         if not self.paused:
-            self.set_point_data.append(self.slider_control.get_slider_value())
-            self.agent.exploration_rate = self.slider_chance_control.get_slider_value()
+            # self.set_point_data.append(self.slider_control.get_slider_value())
+            # self.agent.exploration_rate = self.slider_chance_control.get_slider_value()
+            self.set_point_data.append(self.u[self.iter % 100])
             self.agent.update_q_table(self.set_point_data[-1])
             self.plant_output_data.append(self.agent.plant.get_current_output())
 
@@ -299,6 +313,7 @@ class GraphFrame(wx.Frame):
 
             self.timo = time.time()
             self.draw_plot()
+            self.iter += 1
 
     def on_exit(self, event):
         self.Destroy()

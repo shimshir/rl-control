@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.signal
 
 
 class SimpleControlPlant():
@@ -24,17 +25,15 @@ class SimpleControlPlant():
     def get_current_output(self):
         return self.y
 
+    def reset_states(self):
+        self.x = np.matrix(np.zeros(shape=(self.A.shape[0], 1)))
+        self.y = self.C * self.x
+
     @staticmethod
-    def get_sample_plant():
-        # noinspection PyCallingNonCallable
-        A = np.matrix([[0.84399437, -1.09288258],
-                       [0.02768304, 0.9831445]])
+    def get_sample_plant(sampling_time):
+        z = 0.4
+        wn = (2 * scipy.pi)
+        c_sys = scipy.signal.tf2ss(wn ** 2, [1, (2 * z * wn), wn ** 2])
+        d_sys = scipy.signal.cont2discrete(c_sys, sampling_time)
 
-        # noinspection PyCallingNonCallable
-        B = np.matrix([[0.02768304],
-                       [0.00042695]])
-
-        # noinspection PyCallingNonCallable
-        C = np.matrix([[0., 39.4784176]])
-
-        return SimpleControlPlant(A, B, C)
+        return SimpleControlPlant(np.matrix(d_sys[0]), np.matrix(d_sys[1]), np.matrix(d_sys[2]))

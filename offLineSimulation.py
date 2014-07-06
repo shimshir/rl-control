@@ -14,16 +14,18 @@ for k1 in range(500):
 for k2 in range(500):
     u.append(-0.5)
 
-agent = rl.Agent(actions=np.linspace(-1, 1, 5), e_bins=np.linspace(-1, 1, 200), de_bins=np.linspace(-2, 2, 10),
+agent = rl.Agent(actions=np.linspace(-1, 1, 3), e_bins=np.linspace(-1, 1, 600),
+                 de_bins=np.linspace(-2, 2, 6),
                  plant=plant.SimpleControlPlant.get_sample_plant(0.002), time_step=0.002)
 
 agent.plant = plant.SimpleControlPlant.get_sample_plant(0.002)
 
-for keks in range(5000):
-    agent.update_q_table(u[keks % 1500])
+for k in range(500000):
+    agent.update_q_table(u[k % 1500])
 
 
 # Validation
+agent.plant.reset_states()
 t = []
 set_point = [u[0]]
 y = [0]
@@ -45,13 +47,6 @@ del y[-1]
 del set_point[-1]
 del e[-1]
 del de[-1]
-
-# f, axarr = plt.subplots(2, sharex=True)
-# axarr[0].plot(t, set_point, t, y)
-# axarr[1].plot(t, e)
-#
-# for axis in axarr:
-# axis.grid()
 
 plt.plot(t, set_point, label="Zadata vrijednost")
 plt.plot(t, y, label="Odziv sistema")
