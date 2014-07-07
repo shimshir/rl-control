@@ -1,3 +1,7 @@
+""" Skeleton code for the GUI downloaded from:
+    http://eli.thegreenplace.net/2008/08/01/matplotlib-with-wxpython-guis/
+    credit to Eli Bendersky
+"""
 import os
 import sys
 import wx
